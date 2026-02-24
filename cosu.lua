@@ -1908,31 +1908,43 @@ function input.insert.char(sChar,bCloseBrackets)
     bSaved = false
 end
 
-function input.insert.cursorDelete()
+function input.insert.cursorDelete(bJump)
     if #tContent > tCursor.y and tCursor.x > #tContent[tCursor.y] then
         tContent[tCursor.y] = tContent[tCursor.y] .. tContent[tCursor.y+1]
         table.remove(tContent,tCursor.y+1)
     else
         local sLine = tContent[tCursor.y]
-        if type(sLine) == "nil" then sLine = "" end 
-        tContent[tCursor.y] = string.sub(sLine, 1, tCursor.x-1) .. string.sub(sLine, tCursor.x+1)
+        if type(sLine) == "nil" then sLine = "" end
+        local removes = 1
+        local remainder = sLine:sub(tCursor.x)
+        if bJump then
+            local word = remainder:match("^%s?[%w_]+")
+            local spaces = remainder:match("^%s+")
+            removes = (word and #word) or (spaces and #spaces) or 1
+        end
+        tContent[tCursor.y] = sLine:sub(1, tCursor.x - 1) .. remainder:sub(1 + removes)
     end
     bSaved = false
 end
 
-function input.insert.cursorBackspace()
+function input.insert.cursorBackspace(bJump)
     if not (tCursor.y == 1 and tCursor.x == 1) then
         local lastY = tCursor.y
         local sLine = tContent[tCursor.y]
-        if sLine:sub(tCursor.x-cosuConf.nTabSpace, tCursor.x-1) == (' '):rep(cosuConf.nTabSpace) then
-            tContent[tCursor.y] = string.sub(sLine, 1, tCursor.x-cosuConf.nTabSpace-1) .. string.sub(sLine, tCursor.x)
-            for i=1,cosuConf.nTabSpace-1 do
-                input.insert.cursorHorizontal("left")
-            end
+        if not bJump and sLine:sub(tCursor.x-cosuConf.nTabSpace, tCursor.x-1) == (' '):rep(cosuConf.nTabSpace) then
+            tContent[tCursor.y] = sLine:sub(1, tCursor.x - cosuConf.nTabSpace - 1) .. sLine:sub(tCursor.x)
+            for i=1, cosuConf.nTabSpace do input.insert.cursorHorizontal("left") end
         elseif tCursor.x > 1 then
-            tContent[tCursor.y] = string.sub(sLine, 1, tCursor.x - 2) .. string.sub(sLine, tCursor.x)
+            local removes = 1
+            local remainder = sLine:sub(1, tCursor.x - 1)
+            if bJump then
+                local word = remainder:match("[%w_]+%s?$")
+                local spaces = remainder:match("%s+$")
+                removes = (word and #word) or (spaces and #spaces) or 1
+            end
+            tContent[tCursor.y] = remainder:sub(1, -1 - removes) .. sLine:sub(tCursor.x)
+            for i=1, removes do input.insert.cursorHorizontal("left") end
         end
-        input.insert.cursorHorizontal("left")
         if lastY ~= tCursor.y then
             if tCursor.y > #tContent-3 then tScroll.y = tScroll.y end
             tContent[tCursor.y] = tContent[tCursor.y] .. tContent[tCursor.y+1]
@@ -2385,9 +2397,9 @@ function input.handle.insert(event)
                 tCursor.autoListY = 0
             end
         elseif event[2] == cosuConf.tKeyboard.delete and type(input[mode].cursorDelete) == "function" then
-            input[mode].cursorDelete()
+            input[mode].cursorDelete(tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard.backspace and type(input[mode].cursorBackspace) == "function" then
-            input[mode].cursorBackspace()
+            input[mode].cursorBackspace(tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard.enter and type(input[mode].cursorEnter) == "function" then
             input[mode].cursorEnter()
         
