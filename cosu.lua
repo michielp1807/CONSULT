@@ -9,6 +9,8 @@ cosuConf.tKeyboard = {
     ["delete"]      = keys.delete,
     ["backspace"]   = keys.backspace,
     ["enter"]       = keys.enter,
+    ["home"]        = keys.home,
+    ["end"]         = keys["end"],
 
     ["F_Help"]      = keys.f1,
     ["F_SpChar"]    = keys.f7,
@@ -1892,6 +1894,31 @@ function input.insert.cursorHorizontal(sWay, bJump)
     end
 end
 
+function input.insert.cursorHome(bJump)
+    if bJump then
+        tCursor.y = 1
+        tScroll.y = 0
+    end
+    local spaces = bJump and 1 or #tContent[tCursor.y]:sub(1, tCursor.x - 1):match("^%s*") + 1
+    tCursor.x = tCursor.x > spaces and spaces or 1
+    tCursor.lastX = tCursor.x
+    if tCursor.x <= tScroll.x then
+        tScroll.x = tCursor.x - 1
+    end
+end
+
+function input.insert.cursorEnd(bJump)
+    if bJump then
+        tCursor.y = #tContent
+        tScroll.y = #tContent - h + 2
+    end
+    tCursor.x = #tContent[tCursor.y] + 1
+    tCursor.lastX = tCursor.x
+    if tCursor.x > tScroll.x + w then
+        tScroll.x = tCursor.x - w
+    end
+end
+
 function input.insert.char(sChar,bCloseBrackets)
     if type(sChar)~="string" then
         return
@@ -2411,6 +2438,10 @@ function input.handle.insert(event)
             input[mode].cursorBackspace(tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard.enter and type(input[mode].cursorEnter) == "function" then
             input[mode].cursorEnter()
+        elseif event[2] == cosuConf.tKeyboard.home and type(input[mode].cursorHome) == "function" then
+            input[mode].cursorHome(tActiveKeys["CTRL"])
+        elseif event[2] == cosuConf.tKeyboard["end"] and type(input[mode].cursorEnd) == "function" then
+            input[mode].cursorEnd(tActiveKeys["CTRL"])
         
         elseif event[2] == cosuConf.tKeyboard.F_Help and mode ~= "menu" then
             help("create")
