@@ -1832,16 +1832,29 @@ function input.insert.cursorVertical(sWay, bJump)
     end
 end
 
+local function computeJump(sLine, sWay)
+    if sWay == "left" then
+        local remainder = sLine:sub(1, tCursor.x - 1)
+        local word = remainder:match("[%w_]+%s?$")
+        local spaces = remainder:match("%s+$")
+        return (word and #word) or (spaces and #spaces) or 1
+    else
+        local remainder = sLine:sub(tCursor.x)
+        local word = remainder:match("^%s?[%w_]+")
+        local spaces = remainder:match("^%s+")
+        return (word and #word) or (spaces and #spaces) or 1
+    end
+end
+
 function input.insert.cursorHorizontal(sWay, bJump)
     if sWay == "left" then
         if tCursor.x > 1 then
-            repeat
-                tCursor.x = tCursor.x - 1
-                tCursor.lastX = tCursor.x
-                if tCursor.x-tScroll.x+1 < 1 then
-                    tScroll.x = tScroll.x - 1
-                end
-            until not bJump or tCursor.x <= 1 or tContent[tCursor.y]:sub(tCursor.x-1,tCursor.x-1):match('[ %(%)%.]')
+            local offset = bJump and computeJump(tContent[tCursor.y], sWay) or 1
+            tCursor.x = tCursor.x - offset
+            tCursor.lastX = tCursor.x
+            if tCursor.x <= tScroll.x then
+                tScroll.x = tCursor.x - 1
+            end
         elseif tCursor.x == 1 and tCursor.y ~= 1 then
             tCursor.y = tCursor.y - 1
             tCursor.x = #tContent[tCursor.y] + 1
@@ -1853,13 +1866,12 @@ function input.insert.cursorHorizontal(sWay, bJump)
         end
     elseif sWay == "right" then
         if tCursor.x <= #tContent[tCursor.y] then
-            repeat
-                tCursor.x = tCursor.x + 1
-                tCursor.lastX = tCursor.x
-                if tCursor.x-tScroll.x+1 >= w then
-                    tScroll.x = tScroll.x + 1
-                end
-            until not bJump or tCursor.x >= #tContent[tCursor.y] or tContent[tCursor.y]:sub(tCursor.x-1,tCursor.x-1):match('[ %(%)%.]')
+            local offset = bJump and computeJump(tContent[tCursor.y], sWay) or 1
+            tCursor.x = tCursor.x + offset
+            tCursor.lastX = tCursor.x
+            if tCursor.x > tScroll.x + w then
+                tScroll.x = tCursor.x - w
+            end
         elseif tCursor.y < #tContent then
             tCursor.x = 1
             tCursor.lastX = tCursor.x
@@ -1915,14 +1927,8 @@ function input.insert.cursorDelete(bJump)
     else
         local sLine = tContent[tCursor.y]
         if type(sLine) == "nil" then sLine = "" end
-        local removes = 1
-        local remainder = sLine:sub(tCursor.x)
-        if bJump then
-            local word = remainder:match("^%s?[%w_]+")
-            local spaces = remainder:match("^%s+")
-            removes = (word and #word) or (spaces and #spaces) or 1
-        end
-        tContent[tCursor.y] = sLine:sub(1, tCursor.x - 1) .. remainder:sub(1 + removes)
+        local removes = bJump and computeJump(tContent[tCursor.y], "right") or 1
+        tContent[tCursor.y] = sLine:sub(1, tCursor.x - 1) .. sLine:sub(tCursor.x + removes)
     end
     bSaved = false
 end
@@ -1935,14 +1941,8 @@ function input.insert.cursorBackspace(bJump)
             tContent[tCursor.y] = sLine:sub(1, tCursor.x - cosuConf.nTabSpace - 1) .. sLine:sub(tCursor.x)
             for i=1, cosuConf.nTabSpace do input.insert.cursorHorizontal("left") end
         elseif tCursor.x > 1 then
-            local removes = 1
-            local remainder = sLine:sub(1, tCursor.x - 1)
-            if bJump then
-                local word = remainder:match("[%w_]+%s?$")
-                local spaces = remainder:match("%s+$")
-                removes = (word and #word) or (spaces and #spaces) or 1
-            end
-            tContent[tCursor.y] = remainder:sub(1, -1 - removes) .. sLine:sub(tCursor.x)
+            local removes = bJump and computeJump(tContent[tCursor.y], "left") or 1
+            tContent[tCursor.y] = sLine:sub(1, tCursor.x - 1 - removes) .. sLine:sub(tCursor.x)
             for i=1, removes do input.insert.cursorHorizontal("left") end
         end
         if lastY ~= tCursor.y then
