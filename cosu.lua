@@ -11,6 +11,8 @@ cosuConf.tKeyboard = {
     ["enter"]       = keys.enter,
     ["home"]        = keys.home,
     ["end"]         = keys["end"],
+    ["pageUp"]      = keys.pageUp,
+    ["pageDown"]    = keys.pageDown,
 
     ["F_Help"]      = keys.f1,
     ["F_SpChar"]    = keys.f7,
@@ -1919,6 +1921,20 @@ function input.insert.cursorEnd(bJump)
     end
 end
 
+function input.insert.cursorPageUp(bJump)
+    local newY = math.max(tCursor.y - h + 4, 2)
+    tScroll.y = bJump and tScroll.y + newY - tCursor.y or newY - 1
+    tCursor.y = newY
+    input.insert.cursorVertical("up", bJump)
+end
+
+function input.insert.cursorPageDown(bJump)
+    local newY = math.min(tCursor.y + h - 4, #tContent - 1)
+    tScroll.y = bJump and tScroll.y + newY - tCursor.y or newY - h + 2
+    tCursor.y = newY
+    input.insert.cursorVertical("down", bJump)
+end
+
 function input.insert.char(sChar,bCloseBrackets)
     if type(sChar)~="string" then
         return
@@ -2442,6 +2458,10 @@ function input.handle.insert(event)
             input[mode].cursorHome(tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard["end"] and type(input[mode].cursorEnd) == "function" then
             input[mode].cursorEnd(tActiveKeys["CTRL"])
+        elseif event[2] == cosuConf.tKeyboard.pageUp and type(input[mode].cursorPageUp) == "function" then
+            input[mode].cursorPageUp(tActiveKeys["CTRL"])
+        elseif event[2] == cosuConf.tKeyboard.pageDown and type(input[mode].cursorPageDown) == "function" then
+            input[mode].cursorPageDown(tActiveKeys["CTRL"])
         
         elseif event[2] == cosuConf.tKeyboard.F_Help and mode ~= "menu" then
             help("create")
