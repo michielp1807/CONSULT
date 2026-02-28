@@ -1802,27 +1802,36 @@ end
 
 
 --[[ +++ Input functions +++ ]]
-function input.insert.cursorVertical(sWay, bJump)
+function input.insert.cursorVertical(sWay, bJump, bMoveLine)
+    bMoveLine = bMoveLine and not bJump
     if sWay == "up" then
         if tCursor.y > 1 then
-            if #tContent[tCursor.y-1] >= tCursor.lastX then
-                tCursor.x = tCursor.lastX
+            if bMoveLine then
+                tContent[tCursor.y], tContent[tCursor.y - 1] = tContent[tCursor.y - 1], tContent[tCursor.y]
             else
-                tCursor.x = #tContent[tCursor.y-1]+1
-                if tCursor.x < 1 then tCursor.x = 1 end
+                if #tContent[tCursor.y-1] >= tCursor.lastX then
+                    tCursor.x = tCursor.lastX
+                else
+                    tCursor.x = #tContent[tCursor.y-1]+1
+                    if tCursor.x < 1 then tCursor.x = 1 end
+                end
             end
-            if tCursor.y-tScroll.y+1 < 3 or bJump  then
+            if tCursor.y-tScroll.y+1 < 3 or bJump then
                 tScroll.y = tScroll.y - 1
             end
             tCursor.y = tCursor.y - 1
         end
     elseif sWay == "down" then
-        if tCursor.y+1 <= #tContent then
-            if #tContent[tCursor.y+1] >= tCursor.lastX then
-                tCursor.x = tCursor.lastX
+        if tCursor.y + 1 <= #tContent then
+            if bMoveLine then
+                tContent[tCursor.y], tContent[tCursor.y + 1] = tContent[tCursor.y + 1], tContent[tCursor.y]
             else
-                tCursor.x = #tContent[tCursor.y+1]+1
-                if tCursor.x < 1 then tCursor.x = 1 end
+                if #tContent[tCursor.y+1] >= tCursor.lastX then
+                    tCursor.x = tCursor.lastX
+                else
+                    tCursor.x = #tContent[tCursor.y+1]+1
+                    if tCursor.x < 1 then tCursor.x = 1 end
+                end
             end
             if tCursor.y-tScroll.y+1 > h-2 or bJump then
                 tScroll.y = tScroll.y + 1
@@ -2380,9 +2389,9 @@ function input.handle.insert(event)
         end
 
         if event[2] == cosuConf.tKeyboard.up and type(input[mode].cursorVertical) == "function" then
-            input[mode].cursorVertical("up", tActiveKeys["CTRL"])
+            input[mode].cursorVertical("up", tActiveKeys["CTRL"], tActiveKeys[keys.leftAlt])
         elseif event[2] == cosuConf.tKeyboard.down and type(input[mode].cursorVertical) == "function" then
-            input[mode].cursorVertical("down", tActiveKeys["CTRL"])
+            input[mode].cursorVertical("down", tActiveKeys["CTRL"], tActiveKeys[keys.leftAlt])
         elseif event[2] == cosuConf.tKeyboard.left and type(input[mode].cursorHorizontal) == "function" then
             input[mode].cursorHorizontal("left", tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard.right and type(input[mode].cursorHorizontal) == "function" then
