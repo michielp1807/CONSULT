@@ -142,7 +142,7 @@ local sGithub = {
     ["api"]="https://api.github.com/repos/sammyforreal/consult/releases/latest",
     ["latest"]="https://github.com/sammyforreal/consult/releases/latest/download/cosu.lua"
 }
-local sVersion = "1.4.4"
+local sVersion = "1.4.5"
 local bPreview = false
 local tArgs = { ... }
 local init = function() return end
