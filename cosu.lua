@@ -1992,7 +1992,7 @@ function input.insert.cursorBackspace(bJump)
         if not bJump and sLine:sub(tCursor.x-cosuConf.nTabSpace, tCursor.x-1) == (' '):rep(cosuConf.nTabSpace) then
             tContent[tCursor.y] = sLine:sub(1, tCursor.x - cosuConf.nTabSpace - 1) .. sLine:sub(tCursor.x)
             for i=1, cosuConf.nTabSpace do input.insert.cursorHorizontal("left") end
-        elseif tCursor.x > 1 then
+        elseif tCursor.x >= 1 then
             local removes = bJump and computeJump(tContent[tCursor.y], "left") or 1
             tContent[tCursor.y] = sLine:sub(1, tCursor.x - 1 - removes) .. sLine:sub(tCursor.x)
             for i=1, removes do input.insert.cursorHorizontal("left") end
