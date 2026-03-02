@@ -17,7 +17,3 @@ To install CONSULT, run the following command to download the cosu.lua file:
 wget https://github.com/1Turtle/consult/releases/latest/download/cosu.lua
 ```
 > 👉 For the standard user experience, nothing except the above command needs to be set up in advance + it is completely portable!
-
-How to use or modify?
----------------------
-~~To find out more, check out the [wiki section](https://github.com/1Turtle/consult/wiki)!~~
