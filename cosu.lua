@@ -406,16 +406,17 @@ function update(event, ...)
                 },
                 ["text"] = {
                     {
-                        "UPDATE AVAILABLE",
+                        "An Update is Available!",
                     },{
-                        "v"..sVersion.." --> v"..sNewVersion.."  | Do you want to proceed?",
+                        "v"..sVersion.." \26 v"..sNewVersion.."; Would you like to proceed?",
                         "",
+                        "CHANGELOG:",
                         table.unpack(tChangelog)
                     }
                 },
                 ["button"] = {
-                    { ['x']=42, ['y']=6+#tChangelog, ["label"]="Update", ["status"]=false, ["func"]=function() update("now") end },
-                    { ['x']=39, ['y']=6+#tChangelog, ["label"]="No", ["status"]=false, ["func"]=function() update("close") end }
+                    { ['x']=42, ['y']=7+#tChangelog, ["label"]="Update", ["status"]=false, ["func"]=function() update("now") end },
+                    { ['x']=39, ['y']=7+#tChangelog, ["label"]="No", ["status"]=false, ["func"]=function() update("close") end }
                 }
             })
         end
@@ -501,16 +502,16 @@ function info(event, ...)
             },
             ["text"] = {
                 {
-                    "CONSULT (short cosu) | a Text editor",
+                    "CONSULT (cosu) - An DOS-alike Editor",
                 },{
-                    "  Available under the MIT License.",
-                    "      (c) 2022, Sammy L. Koch",
-                    " Source: github.com/1Turtle/consult",
-                    "           Version: "..sVersion
+                    "v"..sVersion.." (MIT Licensed)",
+                    "Source code available @ https://GitH\187",
+                    " ub.com/SammyForReal/CONSULT",
+                    "Copyright \169 2022-2026 Sammy L. Koch"
                 }
             },
             ["button"] = {
-                { ['x']=31, ['y']=8, ["label"]="Thanks", ["status"]=false, ["func"]=function() info("close") end }
+                { ['x']=32, ['y']=8, ["label"]="Thanks", ["status"]=false, ["func"]=function() info("close") end }
             }
         })
     end
@@ -556,7 +557,7 @@ function help(event, ...)
             ["data"] = {
                 {
                     {
-                        "Text editor (for dummies) | (1/4)",
+                        "Text Editor (for dummies) | (1/4)",
                     },{
                         "* Navigate cursor with [ARROW] keys or    ",
                         "  by clicking with the mouse.",
@@ -567,7 +568,7 @@ function help(event, ...)
                     }
                 },{
                     {
-                        "Text editor (for dummies) | (2/4)",
+                        "Text Editor (for dummies) | (2/4)",
                     },{
                         "  the RIGHT of your cursor with [DELETE]. ",
                         "* To place ("..tostring(cosuConf.nTabSpace)..") spaces, use [TAB].",
