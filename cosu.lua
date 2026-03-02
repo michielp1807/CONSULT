@@ -9,6 +9,10 @@ cosuConf.tKeyboard = {
     ["delete"]      = keys.delete,
     ["backspace"]   = keys.backspace,
     ["enter"]       = keys.enter,
+    ["home"]        = keys.home,
+    ["end"]         = keys["end"],
+    ["pageUp"]      = keys.pageUp,
+    ["pageDown"]    = keys.pageDown,
 
     ["F_Help"]      = keys.f1,
     ["F_SpChar"]    = keys.f7,
@@ -1802,27 +1806,36 @@ end
 
 
 --[[ +++ Input functions +++ ]]
-function input.insert.cursorVertical(sWay, bJump)
+function input.insert.cursorVertical(sWay, bJump, bMoveLine)
+    bMoveLine = bMoveLine and not bJump
     if sWay == "up" then
         if tCursor.y > 1 then
-            if #tContent[tCursor.y-1] >= tCursor.lastX then
-                tCursor.x = tCursor.lastX
+            if bMoveLine then
+                tContent[tCursor.y], tContent[tCursor.y - 1] = tContent[tCursor.y - 1], tContent[tCursor.y]
             else
-                tCursor.x = #tContent[tCursor.y-1]+1
-                if tCursor.x < 1 then tCursor.x = 1 end
+                if #tContent[tCursor.y-1] >= tCursor.lastX then
+                    tCursor.x = tCursor.lastX
+                else
+                    tCursor.x = #tContent[tCursor.y-1]+1
+                    if tCursor.x < 1 then tCursor.x = 1 end
+                end
             end
-            if tCursor.y-tScroll.y+1 < 3 or bJump  then
+            if tCursor.y-tScroll.y+1 < 3 or bJump then
                 tScroll.y = tScroll.y - 1
             end
             tCursor.y = tCursor.y - 1
         end
     elseif sWay == "down" then
-        if tCursor.y+1 <= #tContent then
-            if #tContent[tCursor.y+1] >= tCursor.lastX then
-                tCursor.x = tCursor.lastX
+        if tCursor.y + 1 <= #tContent then
+            if bMoveLine then
+                tContent[tCursor.y], tContent[tCursor.y + 1] = tContent[tCursor.y + 1], tContent[tCursor.y]
             else
-                tCursor.x = #tContent[tCursor.y+1]+1
-                if tCursor.x < 1 then tCursor.x = 1 end
+                if #tContent[tCursor.y+1] >= tCursor.lastX then
+                    tCursor.x = tCursor.lastX
+                else
+                    tCursor.x = #tContent[tCursor.y+1]+1
+                    if tCursor.x < 1 then tCursor.x = 1 end
+                end
             end
             if tCursor.y-tScroll.y+1 > h-2 or bJump then
                 tScroll.y = tScroll.y + 1
@@ -1832,16 +1845,29 @@ function input.insert.cursorVertical(sWay, bJump)
     end
 end
 
+local function computeJump(sLine, sWay)
+    if sWay == "left" then
+        local remainder = sLine:sub(1, tCursor.x - 1)
+        local word = remainder:match("[%w_]+%s?$")
+        local spaces = remainder:match("%s+$")
+        return (word and #word) or (spaces and #spaces) or 1
+    else
+        local remainder = sLine:sub(tCursor.x)
+        local word = remainder:match("^%s?[%w_]+")
+        local spaces = remainder:match("^%s+")
+        return (word and #word) or (spaces and #spaces) or 1
+    end
+end
+
 function input.insert.cursorHorizontal(sWay, bJump)
     if sWay == "left" then
         if tCursor.x > 1 then
-            repeat
-                tCursor.x = tCursor.x - 1
-                tCursor.lastX = tCursor.x
-                if tCursor.x-tScroll.x+1 < 1 then
-                    tScroll.x = tScroll.x - 1
-                end
-            until not bJump or tCursor.x <= 1 or tContent[tCursor.y]:sub(tCursor.x-1,tCursor.x-1):match('[ %(%)%.]')
+            local offset = bJump and computeJump(tContent[tCursor.y], sWay) or 1
+            tCursor.x = tCursor.x - offset
+            tCursor.lastX = tCursor.x
+            if tCursor.x <= tScroll.x then
+                tScroll.x = tCursor.x - 1
+            end
         elseif tCursor.x == 1 and tCursor.y ~= 1 then
             tCursor.y = tCursor.y - 1
             tCursor.x = #tContent[tCursor.y] + 1
@@ -1853,13 +1879,12 @@ function input.insert.cursorHorizontal(sWay, bJump)
         end
     elseif sWay == "right" then
         if tCursor.x <= #tContent[tCursor.y] then
-            repeat
-                tCursor.x = tCursor.x + 1
-                tCursor.lastX = tCursor.x
-                if tCursor.x-tScroll.x+1 >= w then
-                    tScroll.x = tScroll.x + 1
-                end
-            until not bJump or tCursor.x >= #tContent[tCursor.y] or tContent[tCursor.y]:sub(tCursor.x-1,tCursor.x-1):match('[ %(%)%.]')
+            local offset = bJump and computeJump(tContent[tCursor.y], sWay) or 1
+            tCursor.x = tCursor.x + offset
+            tCursor.lastX = tCursor.x
+            if tCursor.x > tScroll.x + w then
+                tScroll.x = tCursor.x - w
+            end
         elseif tCursor.y < #tContent then
             tCursor.x = 1
             tCursor.lastX = tCursor.x
@@ -1869,6 +1894,45 @@ function input.insert.cursorHorizontal(sWay, bJump)
             end
         end
     end
+end
+
+function input.insert.cursorHome(bJump)
+    if bJump then
+        tCursor.y = 1
+        tScroll.y = 0
+    end
+    local spaces = bJump and 1 or #tContent[tCursor.y]:sub(1, tCursor.x - 1):match("^%s*") + 1
+    tCursor.x = tCursor.x > spaces and spaces or 1
+    tCursor.lastX = tCursor.x
+    if tCursor.x <= tScroll.x then
+        tScroll.x = tCursor.x - 1
+    end
+end
+
+function input.insert.cursorEnd(bJump)
+    if bJump then
+        tCursor.y = #tContent
+        tScroll.y = #tContent - h + 2
+    end
+    tCursor.x = #tContent[tCursor.y] + 1
+    tCursor.lastX = tCursor.x
+    if tCursor.x > tScroll.x + w then
+        tScroll.x = tCursor.x - w
+    end
+end
+
+function input.insert.cursorPageUp(bJump)
+    local newY = math.max(tCursor.y - h + 4, 2)
+    tScroll.y = bJump and tScroll.y + newY - tCursor.y or newY - 1
+    tCursor.y = newY
+    input.insert.cursorVertical("up", bJump)
+end
+
+function input.insert.cursorPageDown(bJump)
+    local newY = math.min(tCursor.y + h - 4, #tContent - 1)
+    tScroll.y = bJump and tScroll.y + newY - tCursor.y or newY - h + 2
+    tCursor.y = newY
+    input.insert.cursorVertical("down", bJump)
 end
 
 function input.insert.char(sChar,bCloseBrackets)
@@ -1908,31 +1972,31 @@ function input.insert.char(sChar,bCloseBrackets)
     bSaved = false
 end
 
-function input.insert.cursorDelete()
+function input.insert.cursorDelete(bJump)
     if #tContent > tCursor.y and tCursor.x > #tContent[tCursor.y] then
         tContent[tCursor.y] = tContent[tCursor.y] .. tContent[tCursor.y+1]
         table.remove(tContent,tCursor.y+1)
     else
         local sLine = tContent[tCursor.y]
-        if type(sLine) == "nil" then sLine = "" end 
-        tContent[tCursor.y] = string.sub(sLine, 1, tCursor.x-1) .. string.sub(sLine, tCursor.x+1)
+        if type(sLine) == "nil" then sLine = "" end
+        local removes = bJump and computeJump(tContent[tCursor.y], "right") or 1
+        tContent[tCursor.y] = sLine:sub(1, tCursor.x - 1) .. sLine:sub(tCursor.x + removes)
     end
     bSaved = false
 end
 
-function input.insert.cursorBackspace()
+function input.insert.cursorBackspace(bJump)
     if not (tCursor.y == 1 and tCursor.x == 1) then
         local lastY = tCursor.y
         local sLine = tContent[tCursor.y]
-        if sLine:sub(tCursor.x-cosuConf.nTabSpace, tCursor.x-1) == (' '):rep(cosuConf.nTabSpace) then
-            tContent[tCursor.y] = string.sub(sLine, 1, tCursor.x-cosuConf.nTabSpace-1) .. string.sub(sLine, tCursor.x)
-            for i=1,cosuConf.nTabSpace-1 do
-                input.insert.cursorHorizontal("left")
-            end
+        if not bJump and sLine:sub(tCursor.x-cosuConf.nTabSpace, tCursor.x-1) == (' '):rep(cosuConf.nTabSpace) then
+            tContent[tCursor.y] = sLine:sub(1, tCursor.x - cosuConf.nTabSpace - 1) .. sLine:sub(tCursor.x)
+            for i=1, cosuConf.nTabSpace do input.insert.cursorHorizontal("left") end
         elseif tCursor.x > 1 then
-            tContent[tCursor.y] = string.sub(sLine, 1, tCursor.x - 2) .. string.sub(sLine, tCursor.x)
+            local removes = bJump and computeJump(tContent[tCursor.y], "left") or 1
+            tContent[tCursor.y] = sLine:sub(1, tCursor.x - 1 - removes) .. sLine:sub(tCursor.x)
+            for i=1, removes do input.insert.cursorHorizontal("left") end
         end
-        input.insert.cursorHorizontal("left")
         if lastY ~= tCursor.y then
             if tCursor.y > #tContent-3 then tScroll.y = tScroll.y end
             tContent[tCursor.y] = tContent[tCursor.y] .. tContent[tCursor.y+1]
@@ -2368,9 +2432,9 @@ function input.handle.insert(event)
         end
 
         if event[2] == cosuConf.tKeyboard.up and type(input[mode].cursorVertical) == "function" then
-            input[mode].cursorVertical("up", tActiveKeys["CTRL"])
+            input[mode].cursorVertical("up", tActiveKeys["CTRL"], tActiveKeys[keys.leftAlt])
         elseif event[2] == cosuConf.tKeyboard.down and type(input[mode].cursorVertical) == "function" then
-            input[mode].cursorVertical("down", tActiveKeys["CTRL"])
+            input[mode].cursorVertical("down", tActiveKeys["CTRL"], tActiveKeys[keys.leftAlt])
         elseif event[2] == cosuConf.tKeyboard.left and type(input[mode].cursorHorizontal) == "function" then
             input[mode].cursorHorizontal("left", tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard.right and type(input[mode].cursorHorizontal) == "function" then
@@ -2385,11 +2449,19 @@ function input.handle.insert(event)
                 tCursor.autoListY = 0
             end
         elseif event[2] == cosuConf.tKeyboard.delete and type(input[mode].cursorDelete) == "function" then
-            input[mode].cursorDelete()
+            input[mode].cursorDelete(tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard.backspace and type(input[mode].cursorBackspace) == "function" then
-            input[mode].cursorBackspace()
+            input[mode].cursorBackspace(tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard.enter and type(input[mode].cursorEnter) == "function" then
             input[mode].cursorEnter()
+        elseif event[2] == cosuConf.tKeyboard.home and type(input[mode].cursorHome) == "function" then
+            input[mode].cursorHome(tActiveKeys["CTRL"])
+        elseif event[2] == cosuConf.tKeyboard["end"] and type(input[mode].cursorEnd) == "function" then
+            input[mode].cursorEnd(tActiveKeys["CTRL"])
+        elseif event[2] == cosuConf.tKeyboard.pageUp and type(input[mode].cursorPageUp) == "function" then
+            input[mode].cursorPageUp(tActiveKeys["CTRL"])
+        elseif event[2] == cosuConf.tKeyboard.pageDown and type(input[mode].cursorPageDown) == "function" then
+            input[mode].cursorPageDown(tActiveKeys["CTRL"])
         
         elseif event[2] == cosuConf.tKeyboard.F_Help and mode ~= "menu" then
             help("create")
