@@ -22,6 +22,7 @@ cosuConf.tKeyboard = {
         { "NewFile", keys.n },
         { "SaveAs", { keys.s, keys.leftShift } },
         { "Save", keys.s },
+        { "Comment", keys.slash },
     }
 }
 cosuConf.bCursorIsBlock = false
@@ -2064,6 +2065,25 @@ function input.insert.mouseClick(nButton, nX, nY)
     end
 end
 
+function input.insert.commentLine()
+    local sLine = tContent[tCursor.y]
+    local sWhiteSpace = sLine:match("^%s*")
+    sLine = sLine:sub(#sWhiteSpace + 1)
+    local sDashDash = sLine:match("^%-%- ?")
+    if sDashDash then
+        tContent[tCursor.y] = sWhiteSpace .. sLine:sub(#sDashDash + 1)
+        if tCursor.x > #sWhiteSpace then
+            for i=1, math.min(tCursor.x - #sWhiteSpace - 1, 3) do input.insert.cursorHorizontal("left") end
+        end
+    else
+        tContent[tCursor.y] = sWhiteSpace .. "-- " .. sLine
+        if tCursor.x > #sWhiteSpace then
+            for i=1, 3 do input.insert.cursorHorizontal("right") end
+        end
+    end
+    bSaved = false
+end
+
 function input.menu.cursorEnter()
     if #tPopup > 0 then
         local nItems = 0
@@ -2487,11 +2507,16 @@ function input.handle.insert(event)
                         if #sExecute > 0 then break end
                     end
                 end
-                if sExecute == "NewFile" then       file("create", "new")
-                elseif sExecute == "SaveAs" then    file("create", "save as")
-                elseif sExecute == "Save" then      file("create", "save")
+                if sExecute == "NewFile" then
+                    file("create", "new")
+                    tActiveKeys["CTRL"] = false
+                elseif sExecute == "SaveAs" then
+                    file("create", "save as")
+                elseif sExecute == "Save" then
+                    file("create", "save")
+                elseif sExecute == "Comment" and type(input[mode].commentLine) == "function" then
+                    input[mode].commentLine()
                 end
-                tActiveKeys["CTRL"] = false
             end
             -- Widgets
             for _,widget in pairs(tWidgets) do
