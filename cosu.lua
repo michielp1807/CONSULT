@@ -2011,20 +2011,16 @@ function input.insert.cursorBackspace(bJump)
     end
 end
 
-function input.insert.cursorEnter()
+function input.insert.cursorEnter(bBelow)
     local sLine = tContent[tCursor.y]
-    local sSpaces = ""
     if type(sLine) == "nil" then sLine = "" end
-    local nCounter = 0
-    for i=1,#sLine do
-        if sLine:sub(i,i)~=" " then
-            break
-        end
-        nCounter=nCounter+1
+    local sSpaces = sLine:match("^%s*")
+    if bBelow then
+        table.insert(tContent, tCursor.y+1, sSpaces)
+    else
+        tContent[tCursor.y] = sLine:sub(1, tCursor.x-1)
+        table.insert(tContent, tCursor.y+1, sSpaces..sLine:sub(tCursor.x))
     end
-    sSpaces = ((' '):rep(cosuConf.nTabSpace)):rep(math.floor(nCounter/4))
-    tContent[tCursor.y] = sLine:sub(1, tCursor.x-1)
-    table.insert(tContent, tCursor.y+1, sSpaces..sLine:sub(tCursor.x))
     input.insert.cursorVertical("down")
     tCursor.x = #sSpaces+1
     bSaved = false
@@ -2400,8 +2396,8 @@ function input.insertAuto.cursorBackspace(bJump)
     input.insert.cursorBackspace(bJump)
 end
 
-function input.insertAuto.cursorEnter()
-    input.insert.cursorEnter()
+function input.insertAuto.cursorEnter(bBelow)
+    input.insert.cursorEnter(bBelow)
 end
 
 function input.insertAuto.mouseScroll(nScroll)
@@ -2499,7 +2495,7 @@ function input.handle.insert(event)
         elseif event[2] == cosuConf.tKeyboard.backspace and type(input[mode].cursorBackspace) == "function" then
             input[mode].cursorBackspace(tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard.enter and type(input[mode].cursorEnter) == "function" then
-            input[mode].cursorEnter()
+            input[mode].cursorEnter(tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard.home and type(input[mode].cursorHome) == "function" then
             input[mode].cursorHome(tActiveKeys["CTRL"])
         elseif event[2] == cosuConf.tKeyboard["end"] and type(input[mode].cursorEnd) == "function" then
