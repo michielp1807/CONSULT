@@ -2384,20 +2384,20 @@ function input.insertAuto.cursorVertical(sWay)
     end
 end
 
-function input.insertAuto.cursorHorizontal(sWay)
-    input.insert.cursorHorizontal(sWay)
+function input.insertAuto.cursorHorizontal(sWay, bJump)
+    input.insert.cursorHorizontal(sWay, bJump)
 end
 
 function input.insertAuto.char(sChar)
     input.insert.char(sChar)
 end
 
-function input.insertAuto.cursorDelete()
-    input.insert.cursorDelete()
+function input.insertAuto.cursorDelete(bJump)
+    input.insert.cursorDelete(bJump)
 end
 
-function input.insertAuto.cursorBackspace()
-    input.insert.cursorBackspace()
+function input.insertAuto.cursorBackspace(bJump)
+    input.insert.cursorBackspace(bJump)
 end
 
 function input.insertAuto.cursorEnter()
@@ -2405,9 +2405,8 @@ function input.insertAuto.cursorEnter()
 end
 
 function input.insertAuto.mouseScroll(nScroll)
-    local sWay = "up"
-    if nScroll == 1 then sWay = "down" end
-    input.insertAuto.cursorVertical(sWay, false)
+    local sWay = nScroll == 1 and "down" or "up"
+    input.insertAuto.cursorVertical(sWay)
 end
 
 function input.insertAuto.mouseClick(nButton, nX, nY)
