@@ -23,12 +23,15 @@ cosuConf.tKeyboard = {
         { "SaveAs", { keys.s, keys.leftShift } },
         { "Save", keys.s },
         { "Comment", keys.slash },
+        { "Indent", keys.rightBracket },
+        { "Dedent", keys.leftBracket },
     }
 }
 cosuConf.bCursorIsBlock = false
 cosuConf.cAccentColor = colors.blue
 cosuConf.bDoubleClickButton = false
 cosuConf.nTabSpace = 4 --[[ Normaly 4 spaces. ]]
+cosuConf.bTabIndentsLine = true
 cosuConf.bJumpAtEndToBegin = true
 cosuConf.bShadows = true
 cosuConf.tPalette = {
@@ -2084,6 +2087,20 @@ function input.insert.commentLine()
     bSaved = false
 end
 
+function input.insert.indentLine()
+    tContent[tCursor.y] = (" "):rep(cosuConf.nTabSpace) .. tContent[tCursor.y]
+    for i=1, cosuConf.nTabSpace do input.insert.cursorHorizontal("right") end
+    bSaved = false
+end
+
+function input.insert.dedentLine()
+    if tContent[tCursor.y]:match("^" .. (" "):rep(cosuConf.nTabSpace)) then
+        tContent[tCursor.y] = tContent[tCursor.y]:sub(cosuConf.nTabSpace + 1)
+        for i=1, math.min(tCursor.x-1, cosuConf.nTabSpace) do input.insert.cursorHorizontal("left") end
+    end
+    bSaved = false
+end
+
 function input.menu.cursorEnter()
     if #tPopup > 0 then
         local nItems = 0
@@ -2431,8 +2448,11 @@ function input.handle.insert(event)
     if event[2] == keys.leftAlt then
         tActiveKeys[keys.leftAlt] = (event[1] == "key")
         return
-    end if event[2] == keys.leftCtrl or event[2] == keys.rightCtrl then
+    elseif event[2] == keys.leftCtrl or event[2] == keys.rightCtrl then
         tActiveKeys["CTRL"] = (event[1] == "key")
+        return
+    elseif event[2] == keys.leftShift or event[2] == keys.rightShift then
+        tActiveKeys["SHIFT"] = (event[1] == "key")
         return
     end
     if event[1] == "key" then
@@ -2464,7 +2484,13 @@ function input.handle.insert(event)
             if type(input[mode].tab) == "function" then
                 input[mode].tab()
             elseif mode == "insert" then
-                input[mode].char((' '):rep(cosuConf.nTabSpace))
+                if tActiveKeys["SHIFT"] then
+                    input[mode].dedentLine()
+                elseif cosuConf.bTabIndentsLine then
+                    input[mode].indentLine()
+                else
+                    input[mode].char((' '):rep(cosuConf.nTabSpace))
+                end
             elseif mode == "insertAuto" and tAutoCompleteList[tCursor.autoListY+1] then
                 input.insert.char(tAutoCompleteList[tCursor.autoListY+1],true)
                 tCursor.autoListY = 0
@@ -2516,6 +2542,10 @@ function input.handle.insert(event)
                     file("create", "save")
                 elseif sExecute == "Comment" and type(input[mode].commentLine) == "function" then
                     input[mode].commentLine()
+                elseif sExecute == "Indent" and type(input[mode].indentLine) == "function" then
+                    input[mode].indentLine()
+                elseif sExecute == "Dedent" and type(input[mode].dedentLine) == "function" then
+                    input[mode].dedentLine()
                 end
             end
             -- Widgets
