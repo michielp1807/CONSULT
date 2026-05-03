@@ -1992,17 +1992,16 @@ end
 
 function input.insert.cursorBackspace(bJump)
     if not (tCursor.y == 1 and tCursor.x == 1) then
-        local lastY = tCursor.y
         local sLine = tContent[tCursor.y]
         if not bJump and sLine:sub(tCursor.x-cosuConf.nTabSpace, tCursor.x-1) == (' '):rep(cosuConf.nTabSpace) then
             tContent[tCursor.y] = sLine:sub(1, tCursor.x - cosuConf.nTabSpace - 1) .. sLine:sub(tCursor.x)
             for i=1, cosuConf.nTabSpace do input.insert.cursorHorizontal("left") end
-        elseif tCursor.x >= 1 then
+        elseif tCursor.x > 1 then
             local removes = bJump and computeJump(tContent[tCursor.y], "left") or 1
             tContent[tCursor.y] = sLine:sub(1, tCursor.x - 1 - removes) .. sLine:sub(tCursor.x)
             for i=1, removes do input.insert.cursorHorizontal("left") end
-        end
-        if lastY ~= tCursor.y then
+        else
+            input.insert.cursorHorizontal("left")
             if tCursor.y > #tContent-3 then tScroll.y = tScroll.y end
             tContent[tCursor.y] = tContent[tCursor.y] .. tContent[tCursor.y+1]
             table.remove(tContent,tCursor.y+1)
